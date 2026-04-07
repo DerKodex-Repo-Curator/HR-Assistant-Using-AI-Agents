@@ -43,17 +43,20 @@ await hrPolicyService.IngestDocumentAsync();
 kernel.Plugins.AddFromType<TimePlugin>();
 kernel.Plugins.AddFromType<WeatherPlugin>();
 kernel.Plugins.AddFromType<CalculatorPlugin>();
+kernel.Plugins.AddFromObject(new OnboardingPlugin());
 Console.WriteLine("Choose a mode:");
 Console.WriteLine("1. Chat (direct LLM with plugins)");
 Console.WriteLine("2. HR Policy Agent (with conversation memory)");
-Console.Write("Enter 1 or 2: ");
+Console.WriteLine("3. Onboarding Assistant Agent(with conversation memory)");
+Console.Write("Enter 1 or 2 or 3: ");
 var mode = Console.ReadLine()?.Trim();
 if(mode == "2")
 {
     //Agent mode - Level 4 (new)
     var agent = HRPolicyAgentFactory.CreateAgent(kernel);
     AgentThread thread = new ChatHistoryAgentThread();
-
+    Console.WriteLine("\n=== HR Policy Assistant ===");
+    Console.WriteLine("Welcome! How can I help you with HR Policy query today?:");
     while (true)
     {
         Console.Write("You: ");
@@ -62,6 +65,34 @@ if(mode == "2")
             break;
         var message = new ChatMessageContent(AuthorRole.User, input);
         Console.WriteLine($"HR Assistant: ");
+        await foreach (StreamingChatMessageContent response in agent.InvokeStreamingAsync(message, thread))
+        {
+            Console.Write(response.Content);
+        }
+        Console.WriteLine("\n");
+    }
+}
+else if(mode == "3")
+{
+    //Agent mode - Level 4 (new)
+    var agent = OnboardingAgentFactory.CreateAgent(kernel);
+    AgentThread thread = new ChatHistoryAgentThread();
+    Console.WriteLine("\n=== Employee Onboarding Assistant ===");
+    Console.WriteLine("Welcome! To start onboarding, please provide:");
+    Console.WriteLine("  - Employee name");
+    Console.WriteLine("  - Department");
+    Console.WriteLine("  - Role");
+    Console.WriteLine("  - Start date");
+    Console.WriteLine("  - Hiring manager");
+    Console.WriteLine("Type 'exit' to quit.\n");
+    while (true)
+    {
+        Console.Write("You: ");
+        var input = Console.ReadLine();
+        if (string.IsNullOrWhiteSpace(input) || input.Equals("exit", StringComparison.OrdinalIgnoreCase)) 
+            break;
+        var message = new ChatMessageContent(AuthorRole.User, input);
+        Console.WriteLine($"Onboarding Assistant: ");
         await foreach (StreamingChatMessageContent response in agent.InvokeStreamingAsync(message, thread))
         {
             Console.Write(response.Content);
