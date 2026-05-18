@@ -1,4 +1,22 @@
+# Build artifacts
 bin/
 obj/
 .vs/
 *.user
+
+# Secrets - never commit
+SecretKey.md
+.env
+.env.*
+!.env.example
+appsettings.Development.json
+appsettings.Local.json
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

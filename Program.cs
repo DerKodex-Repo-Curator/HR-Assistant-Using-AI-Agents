@@ -18,8 +18,17 @@ using Microsoft.SemanticKernel.Agents;
 // STEP 1: Create the Kernel (the DI container for AI)
 // Think of this like Program.cs where you register services
 // ============================================================
-//var apiKey = "REDACTED_OPENAI_KEY";
-var apiKey = File.ReadAllText(@"D:\Training\AILearning\MicrosoftSemanticKernel\SecretKey.md").Trim();
+// API key resolution: OPENAI_API_KEY environment variable first,
+// falling back to a SecretKey.md file at the project root.
+// SecretKey.md is gitignored. See README "Setup" for details.
+var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY")
+    ?? (File.Exists("SecretKey.md")
+        ? File.ReadAllText("SecretKey.md").Trim()
+        : throw new InvalidOperationException(
+            "OpenAI API key not found. Set OPENAI_API_KEY environment variable " +
+            "or place your key in SecretKey.md at the project root. " +
+            "See README for setup instructions."));
+
 var hrPolicyDocumentPath = "Documents/HRPolicy.txt";
 
 #pragma warning disable SKEXP0070, SKEXP0010, SKEXP0001
