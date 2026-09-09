@@ -6,6 +6,7 @@ obj/
 
 # Secrets - never commit
 SecretKey.md
+SearchKey.md
 .env
 .env.*
 !.env.example

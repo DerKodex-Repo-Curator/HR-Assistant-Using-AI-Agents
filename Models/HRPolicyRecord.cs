@@ -4,7 +4,7 @@ namespace SKPractice.Models;
 public class HRPolicyRecord
 {
     [VectorStoreKey]
-    public ulong Id {get; set;}
+    public string Id {get; set;}
     [VectorStoreData]
     public string SectionText { get; set; }
     [VectorStoreVector(1536)]

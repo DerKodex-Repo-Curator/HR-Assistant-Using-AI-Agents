@@ -4,7 +4,7 @@ using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using OpenAI.Responses;
 using System.ComponentModel;
-using Microsoft.SemanticKernel.Connectors.Qdrant;
+using Microsoft.SemanticKernel.Connectors.AzureAISearch;
 using Microsoft.Extensions.VectorData;
 using Microsoft.Extensions.AI;
 using System.Reflection;
@@ -13,6 +13,9 @@ using SKPractice.Plugins;
 using SKPractice.Models;
 using SKPractice.Agents;
 using Microsoft.SemanticKernel.Agents;
+using Azure.Search.Documents.Indexes;
+using Azure;
+using Azure.Identity;
 
 // ============================================================
 // STEP 1: Create the Kernel (the DI container for AI)
@@ -28,18 +31,35 @@ var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY")
             "OpenAI API key not found. Set OPENAI_API_KEY environment variable " +
             "or place your key in SecretKey.md at the project root. " +
             "See README for setup instructions."));
+var searchKey = File.Exists("SearchKey.md")
+    ? File.ReadAllText("SearchKey.md").Trim()
+    : throw new InvalidOperationException("Search admin key not found in SearchKey.md");
 
 var hrPolicyDocumentPath = "Documents/HRPolicy.txt";
 
 #pragma warning disable SKEXP0070, SKEXP0010, SKEXP0001
 var builder = Kernel.CreateBuilder()
-    .AddOpenAIChatCompletion("gpt-4o-mini", apiKey)
-    .AddOpenAIEmbeddingGenerator("text-embedding-3-small", apiKey);  // cheap model, good for practice;
-
+    .AddAzureOpenAIChatCompletion(
+        deploymentName: "gpt-5-mini",
+        endpoint: "https://aoai-skpractice-33c50466.openai.azure.com/",
+        credentials: new DefaultAzureCredential())
+    .AddAzureOpenAIEmbeddingGenerator(
+        deploymentName: "text-embedding-3-small",
+        endpoint: "https://aoai-skpractice-33c50466.openai.azure.com/",
+        credential: new DefaultAzureCredential());
 builder.Services.AddSingleton<IHRPolicyService>(sp =>new HRPolicyService(
-    hrPolicyDocumentPath, 
-    sp.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>(),
-    new QdrantCollection<ulong, HRPolicyRecord>(new Qdrant.Client.QdrantClient("localhost", 6334), "hr_policies", true)));    
+        hrPolicyDocumentPath, 
+        sp.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>(),
+            new AzureAISearchCollection<string, HRPolicyRecord>(
+                new SearchIndexClient(
+                    new Uri("https://srch-skpractice-33c50466.search.windows.net"),
+                    //new AzureKeyCredential(searchKey)
+                    new DefaultAzureCredential()
+                ),
+                "hr-policies"
+            )
+        )
+    );    
 builder.Plugins.AddFromType<HRPolicyPlugin>();
 var kernel = builder.Build();
 var hrPolicyService = kernel.Services.GetRequiredService<IHRPolicyService>();

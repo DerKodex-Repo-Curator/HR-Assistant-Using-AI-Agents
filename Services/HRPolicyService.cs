@@ -7,10 +7,10 @@ public class HRPolicyService : IHRPolicyService
 {
     private readonly string _filePath;
     private readonly IEmbeddingGenerator<string, Embedding<float>> _embeddingGenerator;
-    private readonly VectorStoreCollection<ulong, HRPolicyRecord> _collection;
+    private readonly VectorStoreCollection<string, HRPolicyRecord> _collection;
     public HRPolicyService(string filePath, 
     IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
-    VectorStoreCollection<ulong, HRPolicyRecord> collection)
+    VectorStoreCollection<string, HRPolicyRecord> collection)
     {
         _filePath = filePath;
         _embeddingGenerator = embeddingGenerator;
@@ -22,7 +22,7 @@ public class HRPolicyService : IHRPolicyService
         // Check if collection already exists with data — skip if so
         if (await _collection.CollectionExistsAsync())
         {
-            var existing = await _collection.GetAsync(0ul);
+            var existing = await _collection.GetAsync("0");
             if (existing != null)
             {
                 Console.WriteLine("HR Policy already ingested, skipping...");
@@ -44,13 +44,12 @@ public class HRPolicyService : IHRPolicyService
             var embedding = await _embeddingGenerator.GenerateAsync([sectionText]);
             await _collection.UpsertAsync(new HRPolicyRecord
             {
-                Id = i,
+                Id = i.ToString(),
                 SectionText = sectionText,
                 Embedding = embedding[0].Vector
             });
         }
-        Console.WriteLine($"Ingested {sections.Length} sections into Qdrant");
-        
+        Console.WriteLine($"Ingested {sections.Length} sections into Azure AI Search");        
     }
 
     public async Task<string> SearchPolicyAsync(string query)
